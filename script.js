@@ -123,6 +123,7 @@
   const bowlWrap = $("#bowlWrap");
   let noodleCount = 0;
   const noodleNum = $("#noodleCount");
+  const toppingHint = $("#toppingHint");
 
   function playSlurp() {
     if (!actx) return;
@@ -140,6 +141,77 @@
     osc.start(t); osc.stop(t + 0.3);
   }
 
+  function slurpMsg(text) {
+    const m = document.createElement("div");
+    m.className = "slurp-msg";
+    m.textContent = text;
+    bowlWrap.appendChild(m);
+    setTimeout(() => m.remove(), 1400);
+  }
+
+  /* —— 加配料 —— */
+  const TOP_SOUND = { egg: 523.25, veg: 587.33, shrimp: 659.25, spice: 783.99 };
+  const TOP_NAMES = { egg: "荷包蛋", veg: "小青菜", shrimp: "大虾虾", spice: "小辣椒" };
+  const SLURP_MSGS = ["吸溜～", "好好吃！", "呼——烫烫的", "再来一口！", "全世界最好吃的面！", "汤都喝光光！"];
+  const collected = new Set();
+  const toppings = Array.from(document.querySelectorAll(".topping"));
+
+  function updateToppingHint() {
+    const left = 4 - collected.size;
+    if (left === 0) toppingHint.textContent = "全部下锅！豪华面面马上好 ✨";
+    else if (left === 4) toppingHint.textContent = "点点配料，给面面加料～";
+    else toppingHint.textContent = "还差 " + left + " 样就完美啦～";
+  }
+
+  toppings.forEach((btn) => {
+    btn.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      const t = btn.dataset.t;
+      if (collected.has(t)) return;
+      collected.add(t);
+      btn.classList.add("on");
+      playNote(TOP_SOUND[t], 0, 0.3, 0.4);
+      /* 配料从小手落进碗里 */
+      const r = btn.getBoundingClientRect();
+      const d = document.createElement("span");
+      d.className = "topping-drop";
+      d.textContent = btn.textContent;
+      d.style.left = r.left + r.width / 2 + "px";
+      d.style.top = r.top + r.height / 2 + "px";
+      document.body.appendChild(d);
+      setTimeout(() => d.remove(), 800);
+      slurpMsg(TOP_NAMES[t] + " 下锅啦～");
+      updateToppingHint();
+      if (collected.size === 4) celebrateNoodles();
+    });
+  });
+
+  function celebrateNoodles() {
+    bowlWrap.classList.add("celebrate");
+    [523.25, 587.33, 659.25, 783.99, 1046.5].forEach((f, i) => playNote(f, i * 0.13, 0.55, 0.42));
+    for (let i = 0; i < 8; i++) {
+      const s = document.createElement("span");
+      s.className = "spark-burst";
+      s.textContent = pick(["✨", "⭐", "💛"]);
+      s.style.left = rand(8, 92) + "%";
+      s.style.top = rand(5, 85) + "%";
+      bowlWrap.appendChild(s);
+      setTimeout(() => s.remove(), 1400);
+    }
+    setTimeout(() => {
+      playSlurp();
+      noodleCount++;
+      noodleNum.textContent = noodleCount;
+      slurpMsg("豪华面面完成！开吃！🍜");
+    }, 300);
+    setTimeout(() => {
+      bowlWrap.classList.remove("celebrate");
+      collected.clear();
+      toppings.forEach((b) => b.classList.remove("on"));
+      updateToppingHint();
+    }, 2800);
+  }
+
   bowlWrap.addEventListener("pointerdown", (e) => {
     e.preventDefault();
     bowlWrap.classList.remove("wiggle");
@@ -148,15 +220,8 @@
     playSlurp();
     noodleCount++;
     noodleNum.textContent = noodleCount;
-    if (noodleCount % 5 === 0) {
-      setTimeout(() => {
-        const t = document.createElement("div");
-        t.textContent = "好吃到转圈圈！🍥";
-        t.style.cssText = "font-size:14px;color:#C4557F;margin-top:8px;animation:fadeUp .5s ease both;";
-        bowlWrap.parentElement.querySelector(".noodle-count").after(t);
-        setTimeout(() => t.remove(), 2200);
-      }, 200);
-    }
+    if (noodleCount % 10 === 0) slurpMsg("今天的面里有爱心蛋！💛");
+    else slurpMsg(pick(SLURP_MSGS));
   });
   bowlWrap.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); bowlWrap.dispatchEvent(new PointerEvent("pointerdown")); }
@@ -247,12 +312,13 @@
   function resetBall(keepRally = false) {
     over = false;
     ball.classList.remove("over");
+    court.querySelectorAll(".court-msg").forEach((m) => m.remove());
     rally = keepRally ? rally : 0;
     rallyEl.textContent = rally;
-    bx = rand(20, court.clientWidth - BALL - 20);
+    bx = rand(20, Math.max(40, court.clientWidth - BALL - 20));
     by = 10;
     vx = rand(-1.5, 1.5);
-    vy = rand(2, 3);
+    vy = rand(1.2, 1.8);
     ball.style.left = bx + "px";
     ball.style.top = by + "px";
   }
@@ -265,14 +331,16 @@
     const dx = px - (bx + BALL / 2);
     const dy = py - (by + BALL / 2);
     if (Math.hypot(dx, dy) <= BALL * 0.95) {
-      vy = -rand(9.5, 13);
+      vy = -rand(8.5, 11.5);
       vx = rand(-5, 5) + (dx > 0 ? 1.2 : -1.2);
+      if (vy < -11) vy = -11;
       rally++;
       rallyEl.textContent = rally;
       playNote(523.25 + rally * 8, 0, 0.18, 0.28);
       ball.classList.remove("hit");
       void ball.offsetWidth;
       ball.classList.add("hit");
+      court.querySelectorAll(".court-msg").forEach((m) => m.remove());
     }
   });
 
@@ -285,17 +353,32 @@
       localStorage.setItem("petalBest", String(best));
       bestEl.textContent = best;
     }
+    const m = document.createElement("div");
+    m.className = "court-msg";
+    m.textContent = rally >= 8 ? "哇！太厉害了，再来一次 🎾" : "哎呀！再来一次 🎾";
+    court.appendChild(m);
     setTimeout(() => resetBall(), 1100);
   }
+
+  /* 开场的提示 */
+  (function showHint() {
+    const m = document.createElement("div");
+    m.className = "court-msg";
+    m.textContent = "点住小球接住它！🎾";
+    court.appendChild(m);
+    setTimeout(() => m.remove(), 3200);
+  })();
 
   (function loop() {
     const h = court.clientHeight;
     if (!over) {
+      vy += 0.38; /* 重力 */
       by += vy;
       vx *= 0.995;
       bx += vx;
       if (bx < 0) { bx = 0; vx = Math.abs(vx) * 0.9; }
       if (bx > court.clientWidth - BALL) { bx = court.clientWidth - BALL; vx = -Math.abs(vx) * 0.9; }
+      if (by < 0) { by = 0; vy = Math.abs(vy) * 0.55; }
       if (by + BALL >= h) { by = h - BALL; gameOver(); }
       ball.style.left = bx + "px";
       ball.style.top = by + "px";

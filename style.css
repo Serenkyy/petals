@@ -345,6 +345,110 @@ main {
 
 .noodle-count { font-size: 15px; font-weight: 600; color: var(--pink-deep); margin-top: 8px; }
 
+/* 配料按钮 */
+.toppings { display: flex; justify-content: center; gap: 14px; margin-top: 4px; }
+
+.topping {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  font-size: 26px;
+  line-height: 1;
+  border: 2px solid var(--pink-300);
+  background: #fff;
+  box-shadow: 0 4px 10px rgba(196, 85, 127, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: grayscale(0.5);
+  transition: transform .15s ease, box-shadow .15s ease, filter .3s ease;
+  touch-action: manipulation;
+}
+
+.topping:active { transform: scale(.85); }
+
+.topping.on {
+  filter: grayscale(0);
+  border-color: var(--pink-500);
+  box-shadow: 0 0 0 3px rgba(255, 143, 184, 0.35), 0 4px 10px rgba(196, 85, 127, 0.2);
+  animation: toppingPop .4s cubic-bezier(.2, 1.4, .4, 1);
+}
+
+@keyframes toppingPop {
+  from { transform: scale(.4); }
+  to   { transform: scale(1); }
+}
+
+/* 配料落进碗里 */
+.topping-drop {
+  position: fixed;
+  font-size: 32px;
+  pointer-events: none;
+  z-index: 9;
+  transform: translate(-50%, -50%);
+  animation: dropToBowl .75s cubic-bezier(.55, 0, .85, .4) forwards;
+}
+
+@keyframes dropToBowl {
+  0%   { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, 112px) scale(.7) rotate(24deg); opacity: 0; }
+}
+
+/* 面条气泡小字 */
+.slurp-msg {
+  position: absolute;
+  left: 50%;
+  bottom: 148px;
+  transform: translateX(-50%);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--pink-deep);
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 999px;
+  padding: 6px 14px;
+  box-shadow: 0 4px 12px rgba(196, 85, 127, 0.2);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 4;
+  animation: msgUp 1.3s ease-out forwards;
+}
+
+@keyframes msgUp {
+  0%   { transform: translate(-50%, 14px); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translate(-50%, -36px); opacity: 0; }
+}
+
+/* 豪华面面！ */
+.bowl-wrap.celebrate .bowl { animation: bowlGlow 1.4s ease-in-out infinite; }
+
+@keyframes bowlGlow {
+  0%, 100% { box-shadow: 0 8px 14px rgba(196, 85, 127, 0.18); }
+  50% { box-shadow: 0 0 0 7px rgba(255, 220, 140, 0.6), 0 10px 22px rgba(245, 111, 160, 0.45); }
+}
+
+.bowl-wrap.celebrate .bowl-emoji { animation: emojiSpin 1.4s ease-in-out infinite; }
+
+@keyframes emojiSpin {
+  0%, 100% { transform: translateX(-50%) rotate(-6deg) scale(1); }
+  50% { transform: translateX(-50%) rotate(6deg) scale(1.12); }
+}
+
+.spark-burst {
+  position: absolute;
+  font-size: 18px;
+  pointer-events: none;
+  z-index: 3;
+  animation: sparkPop 1.3s ease-out forwards;
+}
+
+@keyframes sparkPop {
+  0%   { transform: scale(.3) translateY(8px); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: scale(1.35) translateY(-26px); opacity: 0; }
+}
+
 /* ============ 相机 ============ */
 .viewfinder {
   position: relative;
@@ -520,6 +624,24 @@ main {
   top: 46%;
   height: 2px;
   background: rgba(255, 255, 255, 0.85);
+}
+
+.court-msg {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.94);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--pink-deep);
+  box-shadow: var(--shadow);
+  z-index: 3;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: fadeUp .3s ease both;
 }
 
 .ball {

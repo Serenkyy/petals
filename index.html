@@ -42,7 +42,7 @@
   <!-- 🍜 面条 -->
   <section class="card" id="noodles">
     <h2>🍜 自怡的小厨房</h2>
-    <p class="card-sub">点一下碗，面条会开心地冒泡泡</p>
+    <p class="card-sub">点一下碗吸溜一口，再给面面加点料～</p>
     <div class="bowl-wrap" id="bowlWrap" role="button" tabindex="0" aria-label="点一下这碗面">
       <span class="steam s1"></span>
       <span class="steam s2"></span>
@@ -50,6 +50,13 @@
       <div class="bowl-emoji">🍜</div>
       <div class="bowl"></div>
     </div>
+    <div class="toppings" id="toppings" role="group" aria-label="加配料">
+      <button class="topping" type="button" data-t="egg" aria-label="加荷包蛋">🥚</button>
+      <button class="topping" type="button" data-t="veg" aria-label="加小青菜">🥬</button>
+      <button class="topping" type="button" data-t="shrimp" aria-label="加大虾虾">🍤</button>
+      <button class="topping" type="button" data-t="spice" aria-label="加小辣椒">🌶️</button>
+    </div>
+    <p class="tiny" id="toppingHint">点点配料，给面面加料～</p>
     <p class="noodle-count">已煮 <span id="noodleCount">0</span> 碗爱心面面 🧡</p>
   </section>
 
@@ -104,7 +111,7 @@
 <footer>
   <p class="footer-line">这个小小的花园，永远为自怡宝贝开放 🌷</p>
   <p class="sign">with love, <span class="script">Сердечко</span> 💗</p>
-  <p class="tiny">2026 · 只属于自怡</p>
+  <p class="tiny">🌷 这个花园只有一把小钥匙，就放在自怡宝贝的口袋里</p>
 </footer>
 
 <script src="script.js"></script>
