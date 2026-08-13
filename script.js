@@ -386,6 +386,7 @@
   let best = parseInt(localStorage.getItem("petalBest") || "0", 10);
   bestEl.textContent = best;
   let over = false;
+  let started = false;   /* 等第一次点击才开始 */
   let g = 0.07;   /* 重力：小一点，球落得慢，好瞄准时机 */
   /* 球场尺寸：随屏幕变化实时更新，小球的活动范围永远等于球场 */
   let cw = court.clientWidth, ch = court.clientHeight;
@@ -432,6 +433,13 @@
 
   court.addEventListener("pointerdown", () => {
     unlockAudio();
+    if (!started) {
+      /* 第一次点击：游戏正式开始 */
+      started = true;
+      ball.classList.remove("idle");
+      courtMsg("开始！看准时机接球～", 1300);
+      return;
+    }
     if (over) { resetBall(); return; }
     const cy = by + BALL / 2;              // 球心当前位置
     if (cy < ZONE_TOP()) {                 // 太早
@@ -454,11 +462,13 @@
     }
   });
 
-  /* 开场提示 */
-  courtMsg("等球落进圆圈，点一下接住它！🎾", 2600);
+  /* 开场：球先安静地等着，点一下才开始 */
+  resetBall();
+  ball.classList.add("idle");
+  courtMsg("点一下开始打球！🎾", 60000);
 
   (function loop() {
-    if (!over) {
+    if (started && !over) {
       vy += g;
       by += vy;
       if (by < 0) { by = 0; vy = Math.abs(vy) * 0.6; }

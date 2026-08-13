@@ -715,6 +715,14 @@ main {
   touch-action: manipulation;
 }
 
+/* 还没开始时，小球在圆圈上方轻轻等着 */
+.ball.idle { animation: idleBob 1.2s ease-in-out infinite; }
+
+@keyframes idleBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(9px); }
+}
+
 .ball.hit { animation: ballPop .18s ease; }
 @keyframes ballPop {
   0% { transform: scale(1); }
