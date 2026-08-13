@@ -38,9 +38,10 @@
   /* capture 阶段解锁：保证任何按钮的第一次点击就能发声 */
   document.addEventListener("pointerdown", unlockAudio, { capture: true, passive: true });
 
-  /* 等音频上下文真正跑起来再发声，避免 iOS 第一声延迟 */
-  function playNote(freq, when = 0, dur = 0.85, vol = 0.5) {
+  /* 等音频上下文真正跑起来再发声，避免 iOS 第一声延迟；可指定输出到某个音量通道 */
+  function playNote(freq, when = 0, dur = 0.85, vol = 0.5, dest) {
     if (!actx) return;
+    const out = dest || master;
     const fire = () => {
       const t = actx.currentTime + when;
       const osc = actx.createOscillator();
@@ -57,8 +58,8 @@
       g2.gain.setValueAtTime(0, t);
       g2.gain.linearRampToValueAtTime(vol * 0.18, t + 0.015);
       g2.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.8);
-      osc.connect(g).connect(master);
-      osc2.connect(g2).connect(master);
+      osc.connect(g).connect(out);
+      osc2.connect(g2).connect(out);
       osc.start(t); osc.stop(t + dur + 0.05);
       osc2.start(t); osc2.stop(t + dur + 0.05);
     };
@@ -334,22 +335,44 @@
     setTimeout(() => b.remove(), 1700);
   }
 
+  /* 歌曲专用音量：点“停止”就能立刻把整首歌静音 */
+  let songGain = null;
+
   singBtn.addEventListener("pointerdown", () => {
     if (singing) { stopSinging(); return; }
     singing = true;
     singBtn.textContent = "⏹ 先休息一下";
     unlockAudio();
+    /* 为这首歌建一个独立音量通道，方便随时停掉 */
+    if (actx) {
+      songGain = actx.createGain();
+      songGain.gain.value = 1;
+      songGain.connect(master);
+    }
     let t = 0;
-    LULLABY.forEach(([f, d]) => { playNote(f, t, d * 0.9, 0.4); t += d * 0.42; });
+    LULLABY.forEach(([f, d]) => { playNote(f, t, d * 0.9, 0.4, songGain || undefined); t += d * 0.42; });
     spawnBubble();
     singTimer = setInterval(spawnBubble, 260);
     setTimeout(stopSinging, t * 1000 + 400);
   });
 
   function stopSinging() {
+    if (!singing) return;
     singing = false;
     singBtn.textContent = "🎶 点我一起唱";
     clearInterval(singTimer);
+    /* 立刻让整首歌安静下来 */
+    if (songGain && actx) {
+      try {
+        const t = actx.currentTime;
+        songGain.gain.cancelScheduledValues(t);
+        songGain.gain.setValueAtTime(1, t);
+        songGain.gain.linearRampToValueAtTime(0.0001, t + 0.05);
+      } catch (err) { /* 静音失败也不影响 */ }
+      const g = songGain;
+      setTimeout(() => { try { g.disconnect(); } catch (err) {} }, 80);
+      songGain = null;
+    }
   }
 
   /* ---------- 🎾 陪自怡打球（时机游戏：看准球落进圆圈的瞬间点一下） ---------- */
