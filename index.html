@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 
@@ -42,7 +42,7 @@
   <!-- 🍜 面条 -->
   <section class="card" id="noodles">
     <h2>🍜 自怡的小厨房</h2>
-    <p class="card-sub">点一下碗吸溜一口，再给面面加点料～</p>
+    <p class="card-sub">先点配料下锅，再点碗吸溜一口～</p>
     <div class="bowl-wrap" id="bowlWrap" role="button" tabindex="0" aria-label="点一下这碗面">
       <span class="steam s1"></span>
       <span class="steam s2"></span>
@@ -51,12 +51,12 @@
       <div class="bowl"></div>
     </div>
     <div class="toppings" id="toppings" role="group" aria-label="加配料">
-      <button class="topping" type="button" data-t="egg" aria-label="加荷包蛋">🥚</button>
-      <button class="topping" type="button" data-t="veg" aria-label="加小青菜">🥬</button>
-      <button class="topping" type="button" data-t="shrimp" aria-label="加大虾虾">🍤</button>
-      <button class="topping" type="button" data-t="spice" aria-label="加小辣椒">🌶️</button>
+      <button class="topping" type="button" data-t="egg" aria-label="加荷包蛋"><span class="tp-emoji">🥚</span><span class="tp-label">荷包蛋</span></button>
+      <button class="topping" type="button" data-t="veg" aria-label="加小青菜"><span class="tp-emoji">🥬</span><span class="tp-label">小青菜</span></button>
+      <button class="topping" type="button" data-t="shrimp" aria-label="加大虾虾"><span class="tp-emoji">🍤</span><span class="tp-label">大虾虾</span></button>
+      <button class="topping" type="button" data-t="spice" aria-label="加小辣椒"><span class="tp-emoji">🌶️</span><span class="tp-label">小辣椒</span></button>
     </div>
-    <p class="tiny" id="toppingHint">点点配料，给面面加料～</p>
+    <p class="tiny" id="toppingHint">👇 点一下配料，加进面里</p>
     <p class="noodle-count">已煮 <span id="noodleCount">0</span> 碗爱心面面 🧡</p>
   </section>
 
@@ -114,6 +114,6 @@
   <p class="tiny">🌷 这个花园只有一把小钥匙，就放在自怡宝贝的口袋里</p>
 </footer>
 
-<script src="script.js"></script>
+<script src="script.js?v=3"></script>
 </body>
 </html>

@@ -13,19 +13,21 @@
 
   function unlockAudio() {
     if (!actx) {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      actx = new AC();
-      master = actx.createGain();
-      master.gain.value = 0.55;
-      master.connect(actx.destination);
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        actx = new AC();
+        master = actx.createGain();
+        master.gain.value = 0.55;
+        master.connect(actx.destination);
+      } catch (err) { return; }
     }
     if (actx.state === "suspended") actx.resume();
   }
   document.addEventListener("pointerdown", unlockAudio, { once: false, passive: true });
 
   function playNote(freq, when = 0, dur = 0.85, vol = 0.5) {
-    if (!actx) return;
+    if (!actx) { unlockAudio(); if (!actx) return; }
     const t = actx.currentTime + when;
     const osc = actx.createOscillator();
     const osc2 = actx.createOscillator();
@@ -126,7 +128,7 @@
   const toppingHint = $("#toppingHint");
 
   function playSlurp() {
-    if (!actx) return;
+    if (!actx) { unlockAudio(); if (!actx) return; }
     const t = actx.currentTime;
     const osc = actx.createOscillator();
     const g = actx.createGain();
@@ -166,25 +168,50 @@
   toppings.forEach((btn) => {
     btn.addEventListener("pointerdown", (e) => {
       e.preventDefault();
+      unlockAudio();
       const t = btn.dataset.t;
       if (collected.has(t)) return;
       collected.add(t);
       btn.classList.add("on");
-      playNote(TOP_SOUND[t], 0, 0.3, 0.4);
-      /* 配料从小手落进碗里 */
-      const r = btn.getBoundingClientRect();
-      const d = document.createElement("span");
-      d.className = "topping-drop";
-      d.textContent = btn.textContent;
-      d.style.left = r.left + r.width / 2 + "px";
-      d.style.top = r.top + r.height / 2 + "px";
-      document.body.appendChild(d);
-      setTimeout(() => d.remove(), 800);
+      const label = btn.querySelector(".tp-label");
+      if (label) label.textContent = "已加✓";
+      playNote(TOP_SOUND[t], 0, 0.3, 0.45);
+      dropToBowl(btn, btn.querySelector(".tp-emoji").textContent);
+      bowlWrap.classList.remove("plop");
+      void bowlWrap.offsetWidth;
+      bowlWrap.classList.add("plop");
       slurpMsg(TOP_NAMES[t] + " 下锅啦～");
       updateToppingHint();
       if (collected.size === 4) celebrateNoodles();
     });
   });
+
+  /* 配料从按钮飞进碗里，落碗时溅起小水花 */
+  function dropToBowl(btn, emoji) {
+    const from = btn.getBoundingClientRect();
+    const to = bowlWrap.querySelector(".bowl-emoji").getBoundingClientRect();
+    const d = document.createElement("span");
+    d.className = "topping-drop";
+    d.textContent = emoji;
+    d.style.left = from.left + from.width / 2 + "px";
+    d.style.top = from.top + from.height / 2 + "px";
+    document.body.appendChild(d);
+    requestAnimationFrame(() => {
+      const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+      const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+      d.style.transform = "translate(calc(" + dx + "px - 50%), calc(" + dy + "px - 50%)) scale(.72)";
+    });
+    setTimeout(() => {
+      d.remove();
+      const s = document.createElement("span");
+      s.className = "bowl-splash";
+      s.textContent = pick(["💦", "✨", "💗"]);
+      s.style.left = to.left + to.width / 2 + "px";
+      s.style.top = to.top + to.height / 2 + "px";
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 700);
+    }, 620);
+  }
 
   function celebrateNoodles() {
     bowlWrap.classList.add("celebrate");
@@ -303,11 +330,17 @@
   const rallyEl = $("#rally");
   const bestEl = $("#best");
   const BALL = 46;
+  const GRAVITY = 0.38;
+  const MAX_VY = 12;
+  const MAX_VX = 7;
   let bx = 120, by = 20, vx = 0, vy = 2.2;
   let rally = 0;
   let best = parseInt(localStorage.getItem("petalBest") || "0", 10);
   bestEl.textContent = best;
   let over = false;
+  /* 球场尺寸：随屏幕变化实时更新，小球的活动范围永远等于球场 */
+  let cw = court.clientWidth, ch = court.clientHeight;
+  window.addEventListener("resize", () => { cw = court.clientWidth; ch = court.clientHeight; });
 
   function resetBall(keepRally = false) {
     over = false;
@@ -315,8 +348,8 @@
     court.querySelectorAll(".court-msg").forEach((m) => m.remove());
     rally = keepRally ? rally : 0;
     rallyEl.textContent = rally;
-    bx = rand(20, Math.max(40, court.clientWidth - BALL - 20));
-    by = 10;
+    bx = rand(20, Math.max(40, cw - BALL - 20));
+    by = 8;
     vx = rand(-1.5, 1.5);
     vy = rand(1.2, 1.8);
     ball.style.left = bx + "px";
@@ -331,9 +364,8 @@
     const dx = px - (bx + BALL / 2);
     const dy = py - (by + BALL / 2);
     if (Math.hypot(dx, dy) <= BALL * 0.95) {
-      vy = -rand(8.5, 11.5);
-      vx = rand(-5, 5) + (dx > 0 ? 1.2 : -1.2);
-      if (vy < -11) vy = -11;
+      vy = Math.max(-MAX_VY, -rand(8.5, 11.5));
+      vx = Math.max(-MAX_VX, Math.min(MAX_VX, rand(-5, 5) + (dx > 0 ? 1.2 : -1.2)));
       rally++;
       rallyEl.textContent = rally;
       playNote(523.25 + rally * 8, 0, 0.18, 0.28);
@@ -370,16 +402,16 @@
   })();
 
   (function loop() {
-    const h = court.clientHeight;
     if (!over) {
-      vy += 0.38; /* 重力 */
+      vy += GRAVITY;
       by += vy;
       vx *= 0.995;
       bx += vx;
-      if (bx < 0) { bx = 0; vx = Math.abs(vx) * 0.9; }
-      if (bx > court.clientWidth - BALL) { bx = court.clientWidth - BALL; vx = -Math.abs(vx) * 0.9; }
-      if (by < 0) { by = 0; vy = Math.abs(vy) * 0.55; }
-      if (by + BALL >= h) { by = h - BALL; gameOver(); }
+      /* 四面硬边界：小球永远不可能离开球场 */
+      if (bx < 0) { bx = 0; vx = Math.abs(vx) * 0.85; }
+      else if (bx > cw - BALL) { bx = cw - BALL; vx = -Math.abs(vx) * 0.85; }
+      if (by < 0) { by = 0; vy = Math.abs(vy) * 0.6; }
+      else if (by > ch - BALL) { by = ch - BALL; gameOver(); }
       ball.style.left = bx + "px";
       ball.style.top = by + "px";
     }

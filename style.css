@@ -346,53 +346,78 @@ main {
 .noodle-count { font-size: 15px; font-weight: 600; color: var(--pink-deep); margin-top: 8px; }
 
 /* 配料按钮 */
-.toppings { display: flex; justify-content: center; gap: 14px; margin-top: 4px; }
+.toppings { display: flex; justify-content: center; gap: 12px; margin-top: 4px; }
 
 .topping {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  font-size: 26px;
-  line-height: 1;
+  width: 72px;
+  height: 80px;
+  border-radius: 18px;
   border: 2px solid var(--pink-300);
   background: #fff;
   box-shadow: 0 4px 10px rgba(196, 85, 127, 0.15);
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  filter: grayscale(0.5);
-  transition: transform .15s ease, box-shadow .15s ease, filter .3s ease;
+  gap: 5px;
+  padding: 6px 4px;
+  filter: grayscale(0.35);
+  transition: transform .15s ease, box-shadow .15s ease, filter .3s ease, border-color .3s ease, background .3s ease;
   touch-action: manipulation;
 }
 
-.topping:active { transform: scale(.85); }
+.topping .tp-emoji { font-size: 30px; line-height: 1; }
+.topping .tp-label { font-size: 11.5px; color: var(--ink-soft); font-weight: 600; }
+
+.topping:active { transform: scale(.9); }
 
 .topping.on {
   filter: grayscale(0);
   border-color: var(--pink-500);
+  background: linear-gradient(180deg, #fff, #FFF0F5);
   box-shadow: 0 0 0 3px rgba(255, 143, 184, 0.35), 0 4px 10px rgba(196, 85, 127, 0.2);
   animation: toppingPop .4s cubic-bezier(.2, 1.4, .4, 1);
 }
 
+.topping.on .tp-label { color: var(--pink-600); }
+
 @keyframes toppingPop {
-  from { transform: scale(.4); }
+  from { transform: scale(.6); }
   to   { transform: scale(1); }
 }
 
-/* 配料落进碗里 */
+/* 配料落进碗里（从手指飞到碗中心） */
 .topping-drop {
   position: fixed;
-  font-size: 32px;
+  font-size: 30px;
   pointer-events: none;
   z-index: 9;
   transform: translate(-50%, -50%);
-  animation: dropToBowl .75s cubic-bezier(.55, 0, .85, .4) forwards;
+  transition: transform .6s cubic-bezier(.55, 0, .75, .4);
 }
 
-@keyframes dropToBowl {
-  0%   { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
-  100% { transform: translate(-50%, 112px) scale(.7) rotate(24deg); opacity: 0; }
+.bowl-splash {
+  position: fixed;
+  font-size: 24px;
+  pointer-events: none;
+  z-index: 9;
+  transform: translate(-50%, -50%);
+  animation: splashPop .7s ease-out forwards;
+}
+
+@keyframes splashPop {
+  0%   { transform: translate(-50%, -50%) scale(.4); opacity: 1; }
+  100% { transform: translate(-50%, calc(-50% - 30px)) scale(1.35); opacity: 0; }
+}
+
+/* 配料落碗时面碗开心地跳一下 */
+.bowl-wrap.plop .bowl-emoji { animation: bowlPlop .45s cubic-bezier(.3, 1.6, .5, 1); }
+
+@keyframes bowlPlop {
+  0%   { transform: translateX(-50%) scale(1); }
+  40%  { transform: translateX(-50%) translateY(-9px) scale(1.14) rotate(-3deg); }
+  100% { transform: translateX(-50%) scale(1); }
 }
 
 /* 面条气泡小字 */
@@ -606,7 +631,7 @@ main {
 /* ============ 网球 ============ */
 .court {
   position: relative;
-  height: 260px;
+  height: 280px;
   border-radius: 18px;
   overflow: hidden;
   border: 2px solid var(--mint);
