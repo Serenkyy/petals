@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFE9F0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>给自怡宝贝 💗</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌸</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 飘落的花瓣 -->
+<div id="petals" aria-hidden="true"></div>
+
+<header class="hero">
+  <div class="hero-badge">🌸 给最可爱的你 🌸</div>
+  <h1 class="hero-title">自怡宝贝</h1>
+  <p class="hero-sub">这里有一个为你做的小花园<br>
+  钢琴 · 花朵 · 面条 · 唱歌 · 网球<br>
+  <span class="hero-love">还有好多好多喜欢 💗</span></p>
+  <div class="hero-heart" id="heroHeart">💗</div>
+  <p class="scroll-hint">往下滑一滑 ⬇</p>
+</header>
+
+<main>
+
+  <!-- 🎹 钢琴 -->
+  <section class="card" id="piano">
+    <h2>🎹 自怡的小钢琴</h2>
+    <p class="card-sub">轻轻点一下琴键，会开出花来哦</p>
+    <div class="piano" id="pianoKeys" role="group" aria-label="小钢琴"></div>
+    <button class="btn" id="playMelody">🎵 给我弹一首小曲</button>
+    <p class="tiny" id="pianoHint">这架小钢琴只会弹出好听的音——因为它是五声音阶，怎么按都对 🥰</p>
+  </section>
+
+  <!-- 🍜 面条 -->
+  <section class="card" id="noodles">
+    <h2>🍜 自怡的小厨房</h2>
+    <p class="card-sub">点一下碗，面条会开心地冒泡泡</p>
+    <div class="bowl-wrap" id="bowlWrap" role="button" tabindex="0" aria-label="点一下这碗面">
+      <span class="steam s1"></span>
+      <span class="steam s2"></span>
+      <span class="steam s3"></span>
+      <div class="bowl-emoji">🍜</div>
+      <div class="bowl"></div>
+    </div>
+    <p class="noodle-count">已煮 <span id="noodleCount">0</span> 碗爱心面面 🧡</p>
+  </section>
+
+  <!-- 📸 相机 -->
+  <section class="card" id="camera">
+    <h2>📸 自怡的 4s 小相机</h2>
+    <p class="card-sub">咔嚓！把可爱的瞬间拍下来</p>
+    <div class="viewfinder" id="viewfinder">
+      <div class="vf-scene">
+        <span class="spark" style="left:12%;top:20%">✨</span>
+        <span class="spark" style="left:70%;top:15%">🌟</span>
+        <span class="spark" style="left:25%;top:65%">🌷</span>
+        <span class="spark" style="left:78%;top:70%">🎀</span>
+        <span class="vf-note">自怡の日常</span>
+      </div>
+      <div class="flash" id="flash"></div>
+    </div>
+    <button class="btn shutter" id="shutter">📸 咔嚓</button>
+    <div class="polaroid-strip" id="strip"></div>
+    <p class="tiny">已拍下 <span id="photoCount">0</span> 张可爱 ✨</p>
+  </section>
+
+  <!-- 🎤 唱歌 -->
+  <section class="card" id="sing">
+    <h2>🎤 自怡的小舞台</h2>
+    <p class="card-sub">按下按钮，星星会跟着你一起唱歌</p>
+    <button class="btn" id="singBtn">🎶 点我一起唱</button>
+    <div class="stage" id="stage" aria-hidden="true">
+      <span class="stage-line"></span><span class="stage-line"></span><span class="stage-line"></span><span class="stage-line"></span><span class="stage-line"></span>
+    </div>
+  </section>
+
+  <!-- 🎾 网球 -->
+  <section class="card" id="tennis">
+    <h2>🎾 陪自怡打球</h2>
+    <p class="card-sub">点住小球，别让它掉到地上呀</p>
+    <div class="court" id="court">
+      <div class="ball" id="ball" role="button" aria-label="网球">🎾</div>
+    </div>
+    <p class="tiny">连续接球 <span id="rally">0</span> 次 · 最好纪录 <span id="best">0</span> 次</p>
+  </section>
+
+  <!-- 💞 在一起 -->
+  <section class="card days-card">
+    <h2>💞 我们在一起</h2>
+    <div class="days-big" id="daysCount">0</div>
+    <p class="days-label">天啦！每一天都比昨天更喜欢自怡一点点</p>
+  </section>
+
+</main>
+
+<footer>
+  <p class="footer-line">这个小小的花园，永远为自怡宝贝开放 🌷</p>
+  <p class="sign">with love, <span class="script">Сердечко</span> 💗</p>
+  <p class="tiny">2026 · 只属于自怡</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
