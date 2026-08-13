@@ -11,19 +11,6 @@
   let actx = null;
   let master = null;
   let audioPrimed = false;
-  let shutterBuf = null;
-
-  /* 生成一小段噪声，用来做相机“咔嚓”声 */
-  function buildShutterBuffer() {
-    try {
-      const len = 0.12;
-      shutterBuf = actx.createBuffer(1, Math.ceil(actx.sampleRate * len), actx.sampleRate);
-      const d = shutterBuf.getChannelData(0);
-      for (let i = 0; i < d.length; i++) {
-        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 1.4);
-      }
-    } catch (err) { shutterBuf = null; }
-  }
 
   function unlockAudio() {
     if (audioPrimed) return;
@@ -37,19 +24,15 @@
         master.connect(actx.destination);
       }
       audioPrimed = true;
-      const done = () => {
-        /* 播放一段静音让 iOS 真正开始出声，并预生成快门声 */
-        try {
-          const buf = actx.createBuffer(1, 1, actx.sampleRate);
-          const src = actx.createBufferSource();
-          src.buffer = buf;
-          src.connect(master);
-          src.start(0);
-        } catch (err) { /* 静音解锁失败也不影响后续 */ }
-        buildShutterBuffer();
-      };
-      if (actx.state === "suspended") actx.resume().then(done).catch(() => {});
-      else done();
+      /* 播放一段静音让 iOS 真正开始出声 */
+      try {
+        const buf = actx.createBuffer(1, 1, actx.sampleRate);
+        const src = actx.createBufferSource();
+        src.buffer = buf;
+        src.connect(master);
+        src.start(0);
+      } catch (err) { /* 静音解锁失败也不影响后续 */ }
+      if (actx.state === "suspended") actx.resume().catch(() => {});
     } catch (err) { actx = null; }
   }
   /* capture 阶段解锁：保证任何按钮的第一次点击就能发声 */
@@ -78,29 +61,6 @@
       osc2.connect(g2).connect(master);
       osc.start(t); osc.stop(t + dur + 0.05);
       osc2.start(t); osc2.stop(t + dur + 0.05);
-    };
-    if (actx.state === "suspended") actx.resume().then(fire).catch(() => {});
-    else fire();
-  }
-
-  /* 相机“咔嚓”：两段式噪声 = 快门开合 */
-  function playShutter() {
-    if (!actx) return;
-    const fire = () => {
-      const t = actx.currentTime;
-      if (!shutterBuf) { playNote(880, 0, 0.08, 0.25); return; }
-      const click = (startAt, vol, attack, decay) => {
-        const src = actx.createBufferSource();
-        src.buffer = shutterBuf;
-        const g = actx.createGain();
-        g.gain.setValueAtTime(0.0001, startAt);
-        g.gain.linearRampToValueAtTime(vol, startAt + attack);
-        g.gain.exponentialRampToValueAtTime(0.0001, startAt + decay);
-        src.connect(g).connect(master);
-        src.start(startAt, 0, 0.12);
-      };
-      click(t, 0.9, 0.004, 0.05);         // 咔嚓！
-      click(t + 0.055, 0.5, 0.004, 0.09); // 回弹
     };
     if (actx.state === "suspended") actx.resume().then(fire).catch(() => {});
     else fire();
@@ -329,7 +289,8 @@
     flashEl.classList.remove("on");
     void flashEl.offsetWidth;
     flashEl.classList.add("on");
-    playShutter();
+    playNote(880, 0, 0.3, 0.25);
+    playNote(1174.66, 0.08, 0.4, 0.2);
 
     const po = document.createElement("div");
     po.className = "polaroid";
