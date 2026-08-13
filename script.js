@@ -7,46 +7,63 @@
   const rand = (a, b) => a + Math.random() * (b - a);
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-  /* ---------- 声音（WebAudio，iOS 需要手势后解锁） ---------- */
+  /* ---------- 声音（WebAudio：页面加载时就建好，首次触摸立即解锁，减少延迟） ---------- */
   let actx = null;
   let master = null;
+  let audioPrimed = false;
 
+  (function initAudio() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      actx = new AC({ latencyHint: "interactive" });
+      master = actx.createGain();
+      master.gain.value = 0.55;
+      master.connect(actx.destination);
+    } catch (err) { actx = null; }
+  })();
+
+  /* 第一次触摸：resume + 播放一段静音，让 iOS 真正开始出声 */
   function unlockAudio() {
-    if (!actx) {
-      try {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return;
-        actx = new AC();
-        master = actx.createGain();
-        master.gain.value = 0.55;
-        master.connect(actx.destination);
-      } catch (err) { return; }
-    }
-    if (actx.state === "suspended") actx.resume();
+    if (!actx || audioPrimed) return;
+    audioPrimed = true;
+    if (actx.state === "suspended") actx.resume().catch(() => {});
+    try {
+      const buf = actx.createBuffer(1, 1, 22050);
+      const src = actx.createBufferSource();
+      src.buffer = buf;
+      src.connect(master);
+      src.start(0);
+    } catch (err) { /* 静音解锁失败也不影响后续 */ }
   }
   document.addEventListener("pointerdown", unlockAudio, { once: false, passive: true });
 
+  /* 等音频上下文真正跑起来再发声，避免 iOS 第一声延迟 */
   function playNote(freq, when = 0, dur = 0.85, vol = 0.5) {
-    if (!actx) { unlockAudio(); if (!actx) return; }
-    const t = actx.currentTime + when;
-    const osc = actx.createOscillator();
-    const osc2 = actx.createOscillator();
-    const g = actx.createGain();
-    const g2 = actx.createGain();
-    osc.type = "sine";
-    osc2.type = "triangle";
-    osc.frequency.value = freq;
-    osc2.frequency.value = freq * 2.01;
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(vol, t + 0.015);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    g2.gain.setValueAtTime(0, t);
-    g2.gain.linearRampToValueAtTime(vol * 0.18, t + 0.015);
-    g2.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.8);
-    osc.connect(g).connect(master);
-    osc2.connect(g2).connect(master);
-    osc.start(t); osc.stop(t + dur + 0.05);
-    osc2.start(t); osc2.stop(t + dur + 0.05);
+    if (!actx) return;
+    const fire = () => {
+      const t = actx.currentTime + when;
+      const osc = actx.createOscillator();
+      const osc2 = actx.createOscillator();
+      const g = actx.createGain();
+      const g2 = actx.createGain();
+      osc.type = "sine";
+      osc2.type = "triangle";
+      osc.frequency.value = freq;
+      osc2.frequency.value = freq * 2.01;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(vol, t + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      g2.gain.setValueAtTime(0, t);
+      g2.gain.linearRampToValueAtTime(vol * 0.18, t + 0.015);
+      g2.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.8);
+      osc.connect(g).connect(master);
+      osc2.connect(g2).connect(master);
+      osc.start(t); osc.stop(t + dur + 0.05);
+      osc2.start(t); osc2.stop(t + dur + 0.05);
+    };
+    if (actx.state === "suspended") actx.resume().then(fire).catch(() => {});
+    else fire();
   }
 
   /* 五声音阶：怎么弹都好听 */
@@ -128,19 +145,23 @@
   const toppingHint = $("#toppingHint");
 
   function playSlurp() {
-    if (!actx) { unlockAudio(); if (!actx) return; }
-    const t = actx.currentTime;
-    const osc = actx.createOscillator();
-    const g = actx.createGain();
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(280, t);
-    osc.frequency.linearRampToValueAtTime(520, t + 0.09);
-    osc.frequency.linearRampToValueAtTime(240, t + 0.22);
-    g.gain.setValueAtTime(0.001, t);
-    g.gain.linearRampToValueAtTime(0.5, t + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.26);
-    osc.connect(g).connect(master);
-    osc.start(t); osc.stop(t + 0.3);
+    if (!actx) return;
+    const fire = () => {
+      const t = actx.currentTime;
+      const osc = actx.createOscillator();
+      const g = actx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(280, t);
+      osc.frequency.linearRampToValueAtTime(520, t + 0.09);
+      osc.frequency.linearRampToValueAtTime(240, t + 0.22);
+      g.gain.setValueAtTime(0.001, t);
+      g.gain.linearRampToValueAtTime(0.5, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.26);
+      osc.connect(g).connect(master);
+      osc.start(t); osc.stop(t + 0.3);
+    };
+    if (actx.state === "suspended") actx.resume().then(fire).catch(() => {});
+    else fire();
   }
 
   function slurpMsg(text) {
@@ -324,94 +345,94 @@
     clearInterval(singTimer);
   }
 
-  /* ---------- 🎾 陪自怡打球 ---------- */
+  /* ---------- 🎾 陪自怡打球（时机游戏：看准球落进圆圈的瞬间点一下） ---------- */
   const court = $("#court");
   const ball = $("#ball");
   const rallyEl = $("#rally");
   const bestEl = $("#best");
   const BALL = 46;
-  const GRAVITY = 0.38;
-  const MAX_VY = 12;
-  const MAX_VX = 7;
-  let bx = 120, by = 20, vx = 0, vy = 2.2;
+  let bx = 0, by = 10, vy = 1.4;
   let rally = 0;
   let best = parseInt(localStorage.getItem("petalBest") || "0", 10);
   bestEl.textContent = best;
   let over = false;
+  let g = 0.42;
   /* 球场尺寸：随屏幕变化实时更新，小球的活动范围永远等于球场 */
   let cw = court.clientWidth, ch = court.clientHeight;
   window.addEventListener("resize", () => { cw = court.clientWidth; ch = court.clientHeight; });
+  /* 接球圈（球拍）位置 */
+  const racketCY = () => ch - 84;          // 圆圈中心 y
+  const ZONE_TOP = () => racketCY() - 40;  // 球心进入此范围 = 可以接
+  const ZONE_BOT = () => racketCY() + 34;  // 球心超过此范围 = 接空了
 
-  function resetBall(keepRally = false) {
+  function courtMsg(text, ms = 900) {
+    court.querySelectorAll(".court-msg").forEach((m) => m.remove());
+    const m = document.createElement("div");
+    m.className = "court-msg";
+    m.textContent = text;
+    court.appendChild(m);
+    setTimeout(() => m.remove(), ms);
+  }
+
+  function resetBall() {
     over = false;
     ball.classList.remove("over");
-    court.querySelectorAll(".court-msg").forEach((m) => m.remove());
-    rally = keepRally ? rally : 0;
+    rally = 0;
     rallyEl.textContent = rally;
-    bx = rand(20, Math.max(40, cw - BALL - 20));
-    by = 8;
-    vx = rand(-1.5, 1.5);
-    vy = rand(1.2, 1.8);
+    g = 0.42;                              // 速度重新变慢
+    bx = cw / 2 - BALL / 2;                // 球从圆圈正上方落下
+    by = 10;
+    vy = 1.4;
     ball.style.left = bx + "px";
     ball.style.top = by + "px";
   }
-
-  court.addEventListener("pointerdown", (e) => {
-    const r = court.getBoundingClientRect();
-    const px = e.clientX - r.left;
-    const py = e.clientY - r.top;
-    if (over) { resetBall(); return; }
-    const dx = px - (bx + BALL / 2);
-    const dy = py - (by + BALL / 2);
-    if (Math.hypot(dx, dy) <= BALL * 0.95) {
-      vy = Math.max(-MAX_VY, -rand(8.5, 11.5));
-      vx = Math.max(-MAX_VX, Math.min(MAX_VX, rand(-5, 5) + (dx > 0 ? 1.2 : -1.2)));
-      rally++;
-      rallyEl.textContent = rally;
-      playNote(523.25 + rally * 8, 0, 0.18, 0.28);
-      ball.classList.remove("hit");
-      void ball.offsetWidth;
-      ball.classList.add("hit");
-      court.querySelectorAll(".court-msg").forEach((m) => m.remove());
-    }
-  });
 
   function gameOver() {
     if (over) return;
     over = true;
     ball.classList.add("over");
+    courtMsg(rally >= 10 ? "哇！超厉害，再来一次 🎾" : "哎呀，接空了！再来一次 🎾", 1100);
     if (rally > best) {
       best = rally;
       localStorage.setItem("petalBest", String(best));
       bestEl.textContent = best;
     }
-    const m = document.createElement("div");
-    m.className = "court-msg";
-    m.textContent = rally >= 8 ? "哇！太厉害了，再来一次 🎾" : "哎呀！再来一次 🎾";
-    court.appendChild(m);
     setTimeout(() => resetBall(), 1100);
   }
 
-  /* 开场的提示 */
-  (function showHint() {
-    const m = document.createElement("div");
-    m.className = "court-msg";
-    m.textContent = "点住小球接住它！🎾";
-    court.appendChild(m);
-    setTimeout(() => m.remove(), 3200);
-  })();
+  court.addEventListener("pointerdown", () => {
+    unlockAudio();
+    if (over) { resetBall(); return; }
+    const cy = by + BALL / 2;              // 球心当前位置
+    if (cy < ZONE_TOP()) {                 // 太早
+      courtMsg("还没到呢，再等等～", 500);
+      return;
+    }
+    if (cy <= ZONE_BOT()) {                // 时机对了！
+      const perfect = Math.abs(cy - racketCY()) < 26;
+      rally++;
+      rallyEl.textContent = rally;
+      g = 0.42 + rally * 0.02;             // 越接越快
+      vy = -(perfect ? rand(8.5, 10.5) : rand(6, 7.5));
+      playNote(523.25 + Math.min(rally, 32) * 9, 0, 0.22, 0.3);
+      ball.classList.remove("hit");
+      void ball.offsetWidth;
+      ball.classList.add("hit");
+      courtMsg(perfect ? "完美接球！🎯" : "好球！", 650);
+    } else {                               // 太晚了
+      gameOver();
+    }
+  });
+
+  /* 开场提示 */
+  courtMsg("等球落进圆圈，点一下接住它！🎾", 2600);
 
   (function loop() {
     if (!over) {
-      vy += GRAVITY;
+      vy += g;
       by += vy;
-      vx *= 0.995;
-      bx += vx;
-      /* 四面硬边界：小球永远不可能离开球场 */
-      if (bx < 0) { bx = 0; vx = Math.abs(vx) * 0.85; }
-      else if (bx > cw - BALL) { bx = cw - BALL; vx = -Math.abs(vx) * 0.85; }
       if (by < 0) { by = 0; vy = Math.abs(vy) * 0.6; }
-      else if (by > ch - BALL) { by = ch - BALL; gameOver(); }
+      if (by > ch - BALL) { by = ch - BALL; gameOver(); }
       ball.style.left = bx + "px";
       ball.style.top = by + "px";
     }

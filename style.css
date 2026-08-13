@@ -651,9 +651,42 @@ main {
   background: rgba(255, 255, 255, 0.85);
 }
 
+/* 接球圈：球要落进来的地方 */
+.racket-ring {
+  position: absolute;
+  left: 50%;
+  bottom: 34px;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 4px dashed rgba(255, 255, 255, 0.95);
+  z-index: 1;
+  pointer-events: none;
+  animation: ringPulse 1.6s ease-in-out infinite;
+}
+
+.racket-ring::after {
+  content: "接住我！";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--pink-deep);
+  letter-spacing: 1px;
+}
+
+@keyframes ringPulse {
+  0%, 100% { box-shadow: 0 0 0 7px rgba(245, 111, 160, 0.2), 0 0 22px rgba(245, 111, 160, 0.45); }
+  50% { box-shadow: 0 0 0 10px rgba(245, 111, 160, 0.32), 0 0 36px rgba(245, 111, 160, 0.62); }
+}
+
 .court-msg {
   position: absolute;
-  top: 42%;
+  top: 30%;
   left: 50%;
   transform: translate(-50%, -50%);
   background: rgba(255, 255, 255, 0.94);
