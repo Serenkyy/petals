@@ -7,36 +7,53 @@
   const rand = (a, b) => a + Math.random() * (b - a);
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-  /* ---------- 声音（WebAudio：页面加载时就建好，首次触摸立即解锁，减少延迟） ---------- */
+  /* ---------- 声音（WebAudio：在第一次触摸时创建+解锁，iOS 最可靠、延迟最低） ---------- */
   let actx = null;
   let master = null;
   let audioPrimed = false;
+  let shutterBuf = null;
 
-  (function initAudio() {
+  /* 生成一小段噪声，用来做相机“咔嚓”声 */
+  function buildShutterBuffer() {
+    try {
+      const len = 0.12;
+      shutterBuf = actx.createBuffer(1, Math.ceil(actx.sampleRate * len), actx.sampleRate);
+      const d = shutterBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 1.4);
+      }
+    } catch (err) { shutterBuf = null; }
+  }
+
+  function unlockAudio() {
+    if (audioPrimed) return;
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
-      actx = new AC({ latencyHint: "interactive" });
-      master = actx.createGain();
-      master.gain.value = 0.55;
-      master.connect(actx.destination);
+      if (!actx) {
+        actx = new AC({ latencyHint: "interactive" });
+        master = actx.createGain();
+        master.gain.value = 0.55;
+        master.connect(actx.destination);
+      }
+      audioPrimed = true;
+      const done = () => {
+        /* 播放一段静音让 iOS 真正开始出声，并预生成快门声 */
+        try {
+          const buf = actx.createBuffer(1, 1, actx.sampleRate);
+          const src = actx.createBufferSource();
+          src.buffer = buf;
+          src.connect(master);
+          src.start(0);
+        } catch (err) { /* 静音解锁失败也不影响后续 */ }
+        buildShutterBuffer();
+      };
+      if (actx.state === "suspended") actx.resume().then(done).catch(() => {});
+      else done();
     } catch (err) { actx = null; }
-  })();
-
-  /* 第一次触摸：resume + 播放一段静音，让 iOS 真正开始出声 */
-  function unlockAudio() {
-    if (!actx || audioPrimed) return;
-    audioPrimed = true;
-    if (actx.state === "suspended") actx.resume().catch(() => {});
-    try {
-      const buf = actx.createBuffer(1, 1, 22050);
-      const src = actx.createBufferSource();
-      src.buffer = buf;
-      src.connect(master);
-      src.start(0);
-    } catch (err) { /* 静音解锁失败也不影响后续 */ }
   }
-  document.addEventListener("pointerdown", unlockAudio, { once: false, passive: true });
+  /* capture 阶段解锁：保证任何按钮的第一次点击就能发声 */
+  document.addEventListener("pointerdown", unlockAudio, { capture: true, passive: true });
 
   /* 等音频上下文真正跑起来再发声，避免 iOS 第一声延迟 */
   function playNote(freq, when = 0, dur = 0.85, vol = 0.5) {
@@ -61,6 +78,29 @@
       osc2.connect(g2).connect(master);
       osc.start(t); osc.stop(t + dur + 0.05);
       osc2.start(t); osc2.stop(t + dur + 0.05);
+    };
+    if (actx.state === "suspended") actx.resume().then(fire).catch(() => {});
+    else fire();
+  }
+
+  /* 相机“咔嚓”：两段式噪声 = 快门开合 */
+  function playShutter() {
+    if (!actx) return;
+    const fire = () => {
+      const t = actx.currentTime;
+      if (!shutterBuf) { playNote(880, 0, 0.08, 0.25); return; }
+      const click = (startAt, vol, attack, decay) => {
+        const src = actx.createBufferSource();
+        src.buffer = shutterBuf;
+        const g = actx.createGain();
+        g.gain.setValueAtTime(0.0001, startAt);
+        g.gain.linearRampToValueAtTime(vol, startAt + attack);
+        g.gain.exponentialRampToValueAtTime(0.0001, startAt + decay);
+        src.connect(g).connect(master);
+        src.start(startAt, 0, 0.12);
+      };
+      click(t, 0.9, 0.004, 0.05);         // 咔嚓！
+      click(t + 0.055, 0.5, 0.004, 0.09); // 回弹
     };
     if (actx.state === "suspended") actx.resume().then(fire).catch(() => {});
     else fire();
@@ -289,8 +329,7 @@
     flashEl.classList.remove("on");
     void flashEl.offsetWidth;
     flashEl.classList.add("on");
-    playNote(880, 0, 0.3, 0.25);
-    playNote(1174.66, 0.08, 0.4, 0.2);
+    playShutter();
 
     const po = document.createElement("div");
     po.className = "polaroid";
@@ -351,12 +390,12 @@
   const rallyEl = $("#rally");
   const bestEl = $("#best");
   const BALL = 46;
-  let bx = 0, by = 10, vy = 1.4;
+  let bx = 0, by = 10, vy = 0.5;
   let rally = 0;
   let best = parseInt(localStorage.getItem("petalBest") || "0", 10);
   bestEl.textContent = best;
   let over = false;
-  let g = 0.42;
+  let g = 0.07;   /* 重力：小一点，球落得慢，好瞄准时机 */
   /* 球场尺寸：随屏幕变化实时更新，小球的活动范围永远等于球场 */
   let cw = court.clientWidth, ch = court.clientHeight;
   window.addEventListener("resize", () => { cw = court.clientWidth; ch = court.clientHeight; });
@@ -379,10 +418,10 @@
     ball.classList.remove("over");
     rally = 0;
     rallyEl.textContent = rally;
-    g = 0.42;                              // 速度重新变慢
+    g = 0.07;                              // 速度重新变慢
     bx = cw / 2 - BALL / 2;                // 球从圆圈正上方落下
     by = 10;
-    vy = 1.4;
+    vy = 0.5;
     ball.style.left = bx + "px";
     ball.style.top = by + "px";
   }
@@ -412,8 +451,8 @@
       const perfect = Math.abs(cy - racketCY()) < 26;
       rally++;
       rallyEl.textContent = rally;
-      g = 0.42 + rally * 0.02;             // 越接越快
-      vy = -(perfect ? rand(8.5, 10.5) : rand(6, 7.5));
+      g = 0.07 + rally * 0.004;            // 越接越快，但慢慢来
+      vy = -(perfect ? rand(5, 6.2) : rand(3.8, 4.8));
       playNote(523.25 + Math.min(rally, 32) * 9, 0, 0.22, 0.3);
       ball.classList.remove("hit");
       void ball.offsetWidth;

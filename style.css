@@ -146,8 +146,7 @@ main {
 
 /* ============ 卡片 ============ */
 .card {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(6px);
+  background: rgba(255, 255, 255, 0.85);
   border: 1.5px solid var(--pink-300);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -502,11 +501,10 @@ main {
   font-size: 15px;
   font-weight: 600;
   color: #fff;
-  background: rgba(196, 85, 127, 0.55);
+  background: rgba(196, 85, 127, 0.6);
   border-radius: 999px;
   padding: 7px 16px;
   letter-spacing: 1px;
-  backdrop-filter: blur(2px);
 }
 
 .spark { position: absolute; font-size: 20px; animation: twinkle 2.2s ease-in-out infinite; }
